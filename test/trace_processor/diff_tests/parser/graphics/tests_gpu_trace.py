@@ -167,6 +167,7 @@ class GraphicsGpuTrace(TestSuite):
               'submission_id',
               'hw_queue_id',
               'render_subpasses',
+              'render_stage_category',
               'upid'
             )
           ) args USING (arg_set_id)
@@ -236,6 +237,7 @@ class GraphicsGpuTrace(TestSuite):
               'submission_id',
               'hw_queue_id',
               'render_subpasses',
+              'render_stage_category',
               'upid'
             )
           ) args USING (arg_set_id)
@@ -522,3 +524,20 @@ class GraphicsGpuTrace(TestSuite):
           10,250.000000,"CounterB",1
           20,0.000000,"CounterB",1
         """))
+
+  def test_gpu_render_stages_flow(self):
+    return DiffTestBlueprint(
+        trace=Path('gpu_render_stages_flow.textproto'),
+        query='''
+          SELECT
+            slice_out.name AS source_slice,
+            slice_in.name AS dest_slice
+          FROM flow
+          JOIN slice AS slice_out ON flow.slice_out = slice_out.id
+          JOIN slice AS slice_in ON flow.slice_in = slice_in.id
+          ORDER BY slice_out.ts, slice_in.ts;
+        ''',
+        out=Csv('''
+          "source_slice","dest_slice"
+          "softmax","matmul"
+        '''))

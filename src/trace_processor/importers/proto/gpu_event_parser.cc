@@ -148,6 +148,7 @@ GpuEventParser::GpuEventParser(TraceProcessorContext* context)
       upid_id_(context->storage->InternString("upid")),
       pid_id_(context_->storage->InternString("pid")),
       tid_id_(context_->storage->InternString("tid")),
+      category_id_(context->storage->InternString("render_stage_category")),
       description_id_(context->storage->InternString("description")),
       correlation_id_(context->storage->InternString("correlation_id")),
       counter_id_key_id_(context->storage->InternString("counter_id")),
@@ -697,7 +698,7 @@ void GpuEventParser::ParseGpuRenderStageEvent(
     } else {
       name_id = GetFullStageName(sequence_state, event);
     }
-    context_->slice_tracker->Scoped(
+    auto opt_slice_id = context_->slice_tracker->Scoped(
         ts, track_id, kNullStringId, name_id,
         static_cast<int64_t>(event.duration()),
         [&](ArgsTracker::BoundInserter* inserter) {
@@ -707,7 +708,9 @@ void GpuEventParser::ParseGpuRenderStageEvent(
                 protos::pbzero::InternedData::kGpuSpecificationsFieldNumber,
                 protos::pbzero::InternedGpuRenderStageSpecification>(stage_iid);
             if (decoder) {
-              // TODO: Add RenderStageCategory to gpu_slice table.
+              inserter->AddArg(
+                  category_id_,
+                  Variadic::Integer(static_cast<int64_t>(decoder->category())));
               inserter->AddArg(description_id_,
                                Variadic::String(context_->storage->InternString(
                                    decoder->description())));
@@ -768,6 +771,19 @@ void GpuEventParser::ParseGpuRenderStageEvent(
               Variadic::Integer(context_->process_tracker->GetOrCreateProcess(
                   static_cast<uint32_t>(pid))));
         });
+
+    if (opt_slice_id) {
+      SliceId slice_id = *opt_slice_id;
+
+      if (event.has_event_id()) {
+        context_->gpu_tracker->AddGpuRenderStageSlice(event.event_id(),
+                                                      slice_id);
+      }
+
+      for (auto it = event.event_wait_ids(); it; ++it) {
+        context_->gpu_tracker->AddEventWait(*it, slice_id);
+      }
+    }
   }
 }
 
