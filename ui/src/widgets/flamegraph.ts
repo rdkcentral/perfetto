@@ -124,6 +124,11 @@ export interface FlamegraphNode {
   readonly marker?: string;
   readonly xStart: number;
   readonly xEnd: number;
+  // CSS color string. When set, overrides the default name-hash palette
+  // for this node — used by diff flamegraphs to encode delta direction
+  // (red=grew / blue=shrank / gray=unchanged) with intensity scaled by
+  // |delta|. Null/undefined falls back to the per-name hash color.
+  readonly colorHint?: string;
 }
 
 export interface FlamegraphQueryData {
@@ -691,7 +696,12 @@ export class Flamegraph implements m.ClassComponent<FlamegraphAttrs> {
         colorScheme = getFlamegraphColorScheme(name, state === 'PARTIAL');
       } else {
         name = nodes[source.queryIdx].name;
-        colorScheme = getFlamegraphColorScheme(name, state === 'PARTIAL');
+        const hint = nodes[source.queryIdx].colorHint;
+        if (hint !== undefined && state !== 'PARTIAL') {
+          colorScheme = getColorSchemeFromHint(hint);
+        } else {
+          colorScheme = getFlamegraphColorScheme(name, state === 'PARTIAL');
+        }
       }
       const bgColor = hover ? colorScheme.variant : colorScheme.base;
       const textColor = hover ? colorScheme.textVariant : colorScheme.textBase;
@@ -1628,6 +1638,92 @@ const ROOT_COLOR_SCHEME = makeColorScheme(
 
 // Cache for computed color schemes by name
 const colorSchemeCache = new Map<string, ColorScheme>();
+
+// Cache for hint-derived schemes — diff flamegraphs typically reuse a
+// small set of HSL strings across many nodes.
+const hintSchemeCache = new Map<string, ColorScheme>();
+
+// Build a ColorScheme from a CSS color string supplied by the data
+// source. Hover variant is the same hue darkened slightly. Falls back to
+// the gray scheme on unparseable input rather than throwing — diff
+// flamegraphs would otherwise break the whole render on one bad row.
+function getColorSchemeFromHint(hint: string): ColorScheme {
+  let scheme = hintSchemeCache.get(hint);
+  if (scheme !== undefined) return scheme;
+  try {
+    const base = parseHslOrHex(hint);
+    scheme = makeColorScheme(base, base.darken(10));
+  } catch {
+    scheme = GREYED_COLOR_SCHEME;
+  }
+  hintSchemeCache.set(hint, scheme);
+  return scheme;
+}
+
+// Minimal CSS color parser sufficient for our diff hints — supports
+// `hsl(h, s%, l%)` and `#rgb` / `#rrggbb`. Throws on anything else; the
+// caller catches and falls back to gray.
+function parseHslOrHex(s: string): HSLColor {
+  const t = s.trim().toLowerCase();
+  const hslMatch =
+    /^hsl\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)$/.exec(
+      t,
+    );
+  if (hslMatch) {
+    return new HSLColor([
+      Number(hslMatch[1]),
+      Number(hslMatch[2]),
+      Number(hslMatch[3]),
+    ]);
+  }
+  if (t.startsWith('#')) {
+    const hex = t.slice(1);
+    let r: number;
+    let g: number;
+    let b: number;
+    if (hex.length === 3) {
+      r = parseInt(hex[0] + hex[0], 16);
+      g = parseInt(hex[1] + hex[1], 16);
+      b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length === 6) {
+      r = parseInt(hex.slice(0, 2), 16);
+      g = parseInt(hex.slice(2, 4), 16);
+      b = parseInt(hex.slice(4, 6), 16);
+    } else {
+      throw new Error(`bad hex: ${s}`);
+    }
+    if ([r, g, b].some(Number.isNaN)) throw new Error(`bad hex: ${s}`);
+    return rgbToHsl(r, g, b);
+  }
+  throw new Error(`unsupported color: ${s}`);
+}
+
+function rgbToHsl(r: number, g: number, b: number): HSLColor {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  let h = 0;
+  let sat = 0;
+  if (max !== min) {
+    const d = max - min;
+    sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case rn:
+        h = (gn - bn) / d + (gn < bn ? 6 : 0);
+        break;
+      case gn:
+        h = (bn - rn) / d + 2;
+        break;
+      default:
+        h = (rn - gn) / d + 4;
+    }
+    h *= 60;
+  }
+  return new HSLColor([h, sat * 100, l * 100]);
+}
 
 function getFlamegraphColorScheme(name: string, greyed: boolean): ColorScheme {
   if (greyed) {
