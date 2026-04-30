@@ -14,6 +14,7 @@
 
 import("../../../gn/perfetto.gni")
 import("../../../gn/perfetto_cc_proto_descriptor.gni")
+import("../../../gn/perfetto_component.gni")
 
 # Track event args parsing logic here is tentatitively planned to eventually
 # move to src/util and will be used to implement writing typed args in console
@@ -24,6 +25,14 @@ import("../../../gn/perfetto_cc_proto_descriptor.gni")
 
 source_set("stdlib") {
   sources = [ "sql_modules.h" ]
+}
+
+source_set("sql_bundle") {
+  sources = [ "sql_bundle.h" ]
+  deps = [
+    "../../../gn:default_deps",
+    "../../../include/perfetto/base",
+  ]
 }
 
 source_set("bump_allocator") {
@@ -53,7 +62,7 @@ source_set("gzip") {
   }
 }
 
-source_set("build_id") {
+perfetto_component("build_id") {
   sources = [
     "build_id.cc",
     "build_id.h",
@@ -158,8 +167,6 @@ source_set("descriptors") {
 
 source_set("proto_to_args_parser") {
   sources = [
-    "debug_annotation_parser.cc",
-    "debug_annotation_parser.h",
     "proto_to_args_parser.cc",
     "proto_to_args_parser.h",
   ]
@@ -418,7 +425,6 @@ source_set("winscope_proto_mapping") {
 source_set("unittests") {
   sources = [
     "bump_allocator_unittest.cc",
-    "debug_annotation_parser_unittest.cc",
     "galloping_search_unittest.cc",
     "glob_unittest.cc",
     "json_parser_unittest.cc",
