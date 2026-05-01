@@ -190,6 +190,12 @@ export interface FlamegraphAttrs {
   readonly data: FlamegraphQueryData | undefined;
 
   readonly onStateChange: (filters: FlamegraphState) => void;
+
+  // Optional handler for the toolbar "Download as pprof" button. When
+  // omitted the button is hidden; this keeps the widget free of any
+  // engine/IO dependencies and lets the engine-aware wrapper
+  // (`QueryFlamegraph`) own the SQL pipeline.
+  readonly onDownloadPprof?: (metricName: string) => void | Promise<void>;
 }
 
 type FilterType =
@@ -879,6 +885,17 @@ export class Flamegraph implements m.ClassComponent<FlamegraphAttrs> {
         },
         disabled: this.attrs.state.view.kind === 'PIVOT',
       }),
+      attrs.onDownloadPprof !== undefined && [
+        m('.pf-flamegraph-filter-bar-spacer'),
+        m(Button, {
+          icon: 'download',
+          compact: true,
+          title: 'Download as pprof',
+          disabled: attrs.data === undefined || attrs.data.nodes.length === 0,
+          onclick: () =>
+            attrs.onDownloadPprof?.(attrs.state.selectedMetricName),
+        }),
+      ],
     );
   }
 

@@ -117,6 +117,7 @@
       - [Batch Trace Processor](analysis/batch-trace-processor.md) {.tag-android .tag-linux .tag-cpp .tag-chrome .tag-perf}
 
     - [Trace Summarization](analysis/trace-summary.md) {.tag-android .tag-linux .tag-cpp .tag-chrome .tag-perf}
+    - [Generating pprof from any tree](analysis/pprof-from-tree.md) {.tag-android .tag-linux .tag-cpp .tag-chrome .tag-perf}
     - [Converting from Perfetto](quickstart/traceconv.md) {.tag-android .tag-linux .tag-cpp .tag-chrome}
 
   - [FAQ](faq.md) {.tag-android .tag-linux .tag-cpp .tag-chrome .tag-perf}
