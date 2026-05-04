@@ -27,57 +27,70 @@ namespace test {
 class AllocatorTest : public ::testing::Test {
  protected:
   static constexpr size_t kCapacity = 10;
-  static constexpr size_t kMemoryLimitBytes = kCapacity * sizeof(Node);
+  static constexpr size_t kMemoryLimitBytes = kCapacity * Allocator::kNodeSize;
   Allocator allocator_{kMemoryLimitBytes};
+
+  template <typename NodeType>
+  void TestAllocationRespectsMemoryLimit(
+      const std::function<StatusOr<OwnedPtr<NodeType>>()>& factory) {
+    ASSERT_EQ(allocator_.GetMemoryUsageBytes(), 0u);
+
+    // Allocate N nodes
+    auto nodes = std::vector<OwnedPtr<NodeType>>{};
+    for (size_t i = 0; i < kCapacity; ++i) {
+      auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
+      auto node = factory();
+      ASSERT_TRUE(node.IsOk());
+      ASSERT_GT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
+      nodes.push_back(std::move(*node));
+    }
+
+    // Failed node allocation (memory limit reached)
+    {
+      auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
+      auto node_fail = factory();
+      ASSERT_FALSE(node_fail.IsOk());
+      ASSERT_EQ(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
+    }
+
+    // Delete one node
+    {
+      auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
+      allocator_.Delete(nodes.back().release());
+      nodes.pop_back();
+      ASSERT_LT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
+    }
+
+    // Successfull node allocation (verify that previous deletion actually freed
+    // memory for one node)
+    {
+      auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
+      auto node_success = factory();
+      ASSERT_TRUE(node_success.IsOk());
+      ASSERT_GT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
+      nodes.push_back(node_success->release());
+    }
+
+    // Delete all nodes
+    for (auto& n : nodes) {
+      auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
+      allocator_.Delete(n.release());
+      ASSERT_LT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
+    }
+
+    ASSERT_EQ(allocator_.GetMemoryUsageBytes(), 0u);
+  }
 };
 
 TEST_F(AllocatorTest, NodeAllocationRespectsMemoryLimit) {
-  ASSERT_EQ(allocator_.GetMemoryUsageBytes(), 0u);
+  TestAllocationRespectsMemoryLimit<Node>(
+      [this]() { return allocator_.CreateNode<Node::Empty>(); });
+}
 
-  // Allocate N nodes
-  auto nodes = std::vector<OwnedPtr<Node>>{};
-  for (size_t i = 0; i < kCapacity; ++i) {
-    auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
-    auto node = allocator_.CreateNode<Node::Empty>();
-    ASSERT_TRUE(node.IsOk());
-    ASSERT_GT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
-    nodes.push_back(std::move(*node));
-  }
-
-  // Failed node allocation (memory limit reached)
-  {
-    auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
-    auto node_fail = allocator_.CreateNode<Node::Empty>();
-    ASSERT_FALSE(node_fail.IsOk());
-    ASSERT_EQ(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
-  }
-
-  // Delete one node
-  {
-    auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
-    allocator_.Delete(nodes.back().release());
-    nodes.pop_back();
-    ASSERT_LT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
-  }
-
-  // Successfull node allocation (verify that previous deletion actually freed
-  // memory for one node)
-  {
-    auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
-    auto node_success = allocator_.CreateNode<Node::Empty>();
-    ASSERT_TRUE(node_success.IsOk());
-    ASSERT_GT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
-    nodes.push_back(node_success->release());
-  }
-
-  // Delete all nodes
-  for (auto& n : nodes) {
-    auto prev_memory_usage = allocator_.GetMemoryUsageBytes();
-    allocator_.Delete(n.release());
-    ASSERT_LT(allocator_.GetMemoryUsageBytes(), prev_memory_usage);
-  }
-
-  ASSERT_EQ(allocator_.GetMemoryUsageBytes(), 0u);
+TEST_F(AllocatorTest, MapNodeAllocationRespectsMemoryLimit) {
+  TestAllocationRespectsMemoryLimit<MapNode>([this]() {
+    return allocator_.CreateMapNode(0, OwnedPtr<Node>(nullptr));
+  });
 }
 
 TEST_F(AllocatorTest, BytesAllocationRespectsMemoryLimit) {

@@ -325,7 +325,7 @@ StatusOr<void> RwProtoCursor::Delete() {
   PERFETTO_DCHECK(parent_link_.map_node);
 
   parent_link_.map->Remove(*parent_link_.map_node);
-  allocator_->Delete(&GetOuterNode(*parent_link_.map_node));
+  allocator_->Delete(parent_link_.map_node);
 
   node_ = nullptr;  // Delete operation invalidates cursor
 
@@ -612,14 +612,13 @@ StatusOr<IntrusiveMap::Iterator> RwProtoCursor::MapInsert(
     uint64_t key,
     OwnedPtr<Node> map_value) {
   auto status_or_map_node =
-      allocator_->CreateNode<Node::MapNode>(key, std::move(map_value));
+      allocator_->CreateMapNode(key, std::move(map_value));
   if (!status_or_map_node.IsOk()) {
     allocator_->Delete(map_value.release());
     PROTOVM_RETURN(status_or_map_node, "Failed to allocate node");
   }
 
-  auto [it, inserted] =
-      map->Insert(*status_or_map_node->release()->GetIf<Node::MapNode>());
+  auto [it, inserted] = map->Insert(*status_or_map_node->release());
   if (!inserted) {
     allocator_->Delete(map_value.release());
     allocator_->Delete(status_or_map_node->release());

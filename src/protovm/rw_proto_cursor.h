@@ -105,7 +105,7 @@ class RwProtoCursor {
   struct ParentLink {
     Node* node;
     IntrusiveMap* map;
-    Node::MapNode* map_node;
+    MapNode* map_node;
   };
 
   StatusOr<void> ConvertToMessageIfNeeded(Node* node);
