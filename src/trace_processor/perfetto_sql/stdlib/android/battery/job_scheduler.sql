@@ -465,7 +465,7 @@ SELECT
 FROM raw_job_states;
 
 -- Create table with job execution intervals (state='STARTED').
-CREATE PERFETTO TABLE _job_started AS
+CREATE PERFETTO TABLE _job_started_sdk AS
 WITH
   job_states_with_lead AS (
     SELECT
@@ -656,7 +656,7 @@ SELECT
       1e9 * 60.0
     )
   ) AS INTEGER) AS uptime_mins
-FROM _job_started;
+FROM _job_started_sdk;
 
 -- Jobs, reported by statsd.
 CREATE PERFETTO TABLE _jobs_from_statsd AS
