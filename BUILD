@@ -463,6 +463,7 @@ perfetto_cc_library(
         ":src_trace_processor_util_simple_json_serializer",
         ":src_trace_processor_util_sql_argument",
         ":src_trace_processor_util_sql_bundle",
+        ":src_trace_processor_util_sql_module_doc_parser",
         ":src_trace_processor_util_stdlib",
         ":src_trace_processor_util_trace_blob_view_reader",
         ":src_trace_processor_util_trace_type",
@@ -574,7 +575,6 @@ perfetto_cc_library(
            PERFETTO_CONFIG.deps.zlib +
            PERFETTO_CONFIG.deps.demangle_wrapper,
     linkstatic = True,
-    alwayslink = True,
 )
 
 # GN target: //src/trace_processor:trace_processor_shell_lib
@@ -693,6 +693,7 @@ perfetto_cc_library(
         ":src_trace_processor_util_simple_json_serializer",
         ":src_trace_processor_util_sql_argument",
         ":src_trace_processor_util_sql_bundle",
+        ":src_trace_processor_util_sql_module_doc_parser",
         ":src_trace_processor_util_stdlib",
         ":src_trace_processor_util_tar_writer",
         ":src_trace_processor_util_trace_blob_view_reader",
@@ -822,7 +823,6 @@ perfetto_cc_library(
            PERFETTO_CONFIG.deps.zlib +
            PERFETTO_CONFIG.deps.demangle_wrapper,
     linkstatic = True,
-    alwayslink = True,
 )
 
 # GN target: //src/traceconv:libpprofbuilder
@@ -3521,6 +3521,8 @@ perfetto_filegroup(
         "src/trace_processor/perfetto_sql/intrinsics/functions/create_intervals.h",
         "src/trace_processor/perfetto_sql/intrinsics/functions/create_view_function.cc",
         "src/trace_processor/perfetto_sql/intrinsics/functions/create_view_function.h",
+        "src/trace_processor/perfetto_sql/intrinsics/functions/critical_path.cc",
+        "src/trace_processor/perfetto_sql/intrinsics/functions/critical_path.h",
         "src/trace_processor/perfetto_sql/intrinsics/functions/dominator_tree.cc",
         "src/trace_processor/perfetto_sql/intrinsics/functions/dominator_tree.h",
         "src/trace_processor/perfetto_sql/intrinsics/functions/graph_scan.cc",
@@ -3621,6 +3623,8 @@ perfetto_filegroup(
         "src/trace_processor/perfetto_sql/intrinsics/table_functions/experimental_slice_layout.h",
         "src/trace_processor/perfetto_sql/intrinsics/table_functions/flamegraph_construction_algorithms.cc",
         "src/trace_processor/perfetto_sql/intrinsics/table_functions/flamegraph_construction_algorithms.h",
+        "src/trace_processor/perfetto_sql/intrinsics/table_functions/stdlib_docs_table_function.cc",
+        "src/trace_processor/perfetto_sql/intrinsics/table_functions/stdlib_docs_table_function.h",
         "src/trace_processor/perfetto_sql/intrinsics/table_functions/table_info.cc",
         "src/trace_processor/perfetto_sql/intrinsics/table_functions/table_info.h",
         "src/trace_processor/perfetto_sql/intrinsics/table_functions/winscope_proto_to_args_with_defaults.cc",
@@ -3658,6 +3662,7 @@ perfetto_filegroup(
         "src/trace_processor/perfetto_sql/intrinsics/types/sorted_timestamps.h",
         "src/trace_processor/perfetto_sql/intrinsics/types/struct.h",
         "src/trace_processor/perfetto_sql/intrinsics/types/value.h",
+        "src/trace_processor/perfetto_sql/intrinsics/types/wakeup_graph.h",
     ],
 )
 
@@ -3886,6 +3891,7 @@ perfetto_filegroup(
         "src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql",
         "src/trace_processor/perfetto_sql/stdlib/android/network_packets.sql",
         "src/trace_processor/perfetto_sql/stdlib/android/oom_adjuster.sql",
+        "src/trace_processor/perfetto_sql/stdlib/android/package_lookup.sql",
         "src/trace_processor/perfetto_sql/stdlib/android/power_rails.sql",
         "src/trace_processor/perfetto_sql/stdlib/android/process_metadata.sql",
         "src/trace_processor/perfetto_sql/stdlib/android/render_thread.sql",
@@ -3956,7 +3962,6 @@ perfetto_filegroup(
 perfetto_filegroup(
     name = "src_trace_processor_perfetto_sql_stdlib_graphs_graphs",
     srcs = [
-        "src/trace_processor/perfetto_sql/stdlib/graphs/critical_path.sql",
         "src/trace_processor/perfetto_sql/stdlib/graphs/dominator_tree.sql",
         "src/trace_processor/perfetto_sql/stdlib/graphs/hierarchy.sql",
         "src/trace_processor/perfetto_sql/stdlib/graphs/partition.sql",
@@ -4295,6 +4300,7 @@ perfetto_filegroup(
     srcs = [
         "src/trace_processor/perfetto_sql/syntaqlite/syntaqlite_perfetto.c",
         "src/trace_processor/perfetto_sql/syntaqlite/syntaqlite_perfetto.h",
+        "src/trace_processor/perfetto_sql/syntaqlite/utils.h",
     ],
 )
 
@@ -4420,6 +4426,7 @@ perfetto_filegroup(
     name = "src_trace_processor_plugins_wattson_wattson",
     srcs = [
         "src/trace_processor/plugins/wattson/plugin.cc",
+        "src/trace_processor/plugins/wattson/register.h",
         "src/trace_processor/plugins/wattson/table_function.cc",
         "src/trace_processor/plugins/wattson/table_function.h",
     ],
@@ -5057,6 +5064,15 @@ perfetto_filegroup(
     name = "src_trace_processor_util_sql_bundle",
     srcs = [
         "src/trace_processor/util/sql_bundle.h",
+    ],
+)
+
+# GN target: //src/trace_processor/util:sql_module_doc_parser
+perfetto_filegroup(
+    name = "src_trace_processor_util_sql_module_doc_parser",
+    srcs = [
+        "src/trace_processor/util/sql_module_doc_parser.cc",
+        "src/trace_processor/util/sql_module_doc_parser.h",
     ],
 )
 
@@ -9356,6 +9372,7 @@ perfetto_cc_library(
         ":src_trace_processor_util_simple_json_serializer",
         ":src_trace_processor_util_sql_argument",
         ":src_trace_processor_util_sql_bundle",
+        ":src_trace_processor_util_sql_module_doc_parser",
         ":src_trace_processor_util_stdlib",
         ":src_trace_processor_util_trace_blob_view_reader",
         ":src_trace_processor_util_trace_type",
@@ -9467,7 +9484,6 @@ perfetto_cc_library(
            PERFETTO_CONFIG.deps.zlib +
            PERFETTO_CONFIG.deps.demangle_wrapper,
     linkstatic = True,
-    alwayslink = True,
 )
 
 # GN target: //src/trace_processor:trace_processor_shell
@@ -9612,6 +9628,7 @@ perfetto_cc_binary(
         ":src_trace_processor_util_simple_json_serializer",
         ":src_trace_processor_util_sql_argument",
         ":src_trace_processor_util_sql_bundle",
+        ":src_trace_processor_util_sql_module_doc_parser",
         ":src_trace_processor_util_stdlib",
         ":src_trace_processor_util_tar_writer",
         ":src_trace_processor_util_trace_blob_view_reader",

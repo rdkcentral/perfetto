@@ -27,7 +27,7 @@ import {MiddleEllipsis} from './middle_ellipsis';
 import {Popup, PopupPosition} from './popup';
 import {Select} from './select';
 import {Spinner} from './spinner';
-import {SegmentedButtons} from './segmented_buttons';
+import {SegmentedButton, SegmentedButtons} from './segmented_buttons';
 import {TagInput} from './tag_input';
 import {TextInput} from './text_input';
 import {Tooltip} from './tooltip';
@@ -160,6 +160,8 @@ const FLAMEGRAPH_VIEW_SCHEMA = z
     z.object({
       kind: z.literal('PIVOT').readonly(),
       pivot: z.string().readonly(),
+      // Display text for the pivot chip; SQL match still uses `pivot`.
+      displayLabel: z.string().optional().readonly(),
     }),
   ])
   .readonly();
@@ -868,17 +870,26 @@ export class Flamegraph implements m.ClassComponent<FlamegraphAttrs> {
         },
       }),
       m('.pf-flamegraph-filter-bar-separator'),
-      m(SegmentedButtons, {
-        options: [{label: 'Top Down'}, {label: 'Bottom Up'}],
-        selectedOption: this.attrs.state.view.kind === 'TOP_DOWN' ? 0 : 1,
-        onOptionSelected: (num) => {
-          this.attrs.onStateChange({
-            ...this.attrs.state,
-            view: {kind: num === 0 ? 'TOP_DOWN' : 'BOTTOM_UP'},
-          });
+      m(
+        SegmentedButtons,
+        {
+          selectedValue:
+            this.attrs.state.view.kind === 'TOP_DOWN'
+              ? 'top-down'
+              : 'bottom-up',
+          onOptionSelected: (value) => {
+            this.attrs.onStateChange({
+              ...this.attrs.state,
+              view: {kind: value === 'top-down' ? 'TOP_DOWN' : 'BOTTOM_UP'},
+            });
+          },
+          disabled: this.attrs.state.view.kind === 'PIVOT',
         },
-        disabled: this.attrs.state.view.kind === 'PIVOT',
-      }),
+        [
+          m(SegmentedButton, {value: 'top-down'}, 'Top Down'),
+          m(SegmentedButton, {value: 'bottom-up'}, 'Bottom Up'),
+        ],
+      ),
     );
   }
 
@@ -1497,7 +1508,9 @@ function toTags(state: FlamegraphState): ReadonlyArray<string> {
   };
   const filters = state.filters.map((x) => toString(x));
   return filters.concat(
-    state.view.kind === 'PIVOT' ? ['Pivot: ' + state.view.pivot] : [],
+    state.view.kind === 'PIVOT'
+      ? ['Pivot: ' + (state.view.displayLabel ?? state.view.pivot)]
+      : [],
   );
 }
 
