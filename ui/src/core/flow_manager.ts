@@ -303,10 +303,42 @@ export class FlowManager {
       }
     }
 
-    // Fill in the track uris if available
+    // Per-slice trackUri resolution. Some slices are owned by a more
+    // specific UI track than the one that owns the underlying TP track id
+    // (e.g. a per-process view of GPU render stages). Ask the selection
+    // manager which UI tracks claim each slice id; the answer is keyed by
+    // slice id which is more precise than the trackId map below.
+    //
+    // resolveSqlEvents emits no-filter tracks first, then filtered tracks.
+    // The no-filter tracks are typically the more specific ones (custom
+    // subqueries, e.g. "WHERE upid = X AND ..."), so use first-occurrence-
+    // wins when building the slice -> trackUri map.
+    const allSliceIds = new Set<number>();
+    for (const flow of flows) {
+      allSliceIds.add(flow.begin.sliceId);
+      allSliceIds.add(flow.end.sliceId);
+    }
+    const sliceIdToTrackUri = new Map<number, string>();
+    if (allSliceIds.size > 0) {
+      const resolved = await this.selectionMgr.resolveSqlEvents('slice', [
+        ...allSliceIds,
+      ]);
+      for (const m of resolved) {
+        if (!sliceIdToTrackUri.has(m.eventId)) {
+          sliceIdToTrackUri.set(m.eventId, m.trackUri);
+        }
+      }
+    }
+
+    // Fill in the track uris. Per-slice resolution wins; fall back to the
+    // trackId map for slices not claimed by any specific UI track.
     flows.forEach((flow) => {
-      flow.begin.trackUri = trackIdToTrack.get(flow.begin.trackId)?.uri;
-      flow.end.trackUri = trackIdToTrack.get(flow.end.trackId)?.uri;
+      flow.begin.trackUri =
+        sliceIdToTrackUri.get(flow.begin.sliceId) ??
+        trackIdToTrack.get(flow.begin.trackId)?.uri;
+      flow.end.trackUri =
+        sliceIdToTrackUri.get(flow.end.sliceId) ??
+        trackIdToTrack.get(flow.end.trackId)?.uri;
     });
 
     return flows;

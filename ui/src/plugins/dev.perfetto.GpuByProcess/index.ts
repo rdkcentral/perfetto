@@ -383,6 +383,13 @@ export default class implements PerfettoPlugin {
         renderer: SliceTrack.create({
           trace: ctx,
           uri,
+          // gpu_slice is a view over the `slice` root table. Setting
+          // rootTableName lets selection_manager.resolveSqlEvents() find
+          // these tracks when looking up a UI track for a slice id, which
+          // in turn lets flow_manager anchor flow arrows here (instead of
+          // at the global hw queue track) and lets click selection
+          // trigger the flow query.
+          rootTableName: 'slice',
           dataset: t.dataset,
           detailsPanel: () => new ThreadSliceDetailsPanel(ctx),
         }),

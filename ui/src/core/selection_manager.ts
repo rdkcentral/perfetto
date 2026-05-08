@@ -265,11 +265,9 @@ export class SelectionManagerImpl implements SelectionManager {
     for (const [dataset, track] of tracksWithNoFilter) {
       const query = `select id from (${dataset.query()}) where id IN (${ids.join(',')})`;
       const result = await this.engine.query(query);
-      if (result.numRows() > 0) {
-        matches.push({
-          eventId: result.firstRow({id: NUM}).id,
-          trackUri: track.uri,
-        });
+      const it = result.iter({id: NUM});
+      for (; it.valid(); it.next()) {
+        matches.push({eventId: it.id, trackUri: track.uri});
       }
     }
 
