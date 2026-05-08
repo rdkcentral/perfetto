@@ -21,7 +21,13 @@ import {AdbDevice} from '../../dev.perfetto.RecordTraceV2/adb/adb_device';
 import {createAdbTracingSession} from '../../dev.perfetto.RecordTraceV2/adb/adb_tracing_session';
 import {TracingSession} from '../../dev.perfetto.RecordTraceV2/interfaces/tracing_session';
 import {TracedWebsocketTarget} from '../../dev.perfetto.RecordTraceV2/traced_over_websocket/traced_websocket_target';
+import {App} from '../../../public/app';
 import {ConnectionResult} from '../views/connection';
+import {
+  ProfileSession,
+  createProcessProfileSession,
+  type ProfileState,
+} from './profile_session';
 
 let engineCounter = 0;
 
@@ -83,6 +89,7 @@ export type OnSnapshotCallback = (data: SnapshotData) => void;
  * notifies registered callbacks.
  */
 export class LiveSession {
+  private readonly app: App;
   private session?: TracingSession;
   private engine?: WasmEngineProxy;
   private readonly sessionName: string;
@@ -113,7 +120,48 @@ export class LiveSession {
   // True when the last snapshot took longer than the configured interval.
   snapshotOverrun = false;
 
-  constructor(conn: ConnectionResult) {
+  // Active process profile (if any).
+  activeProfile?: ProfileSession;
+  private profileStartMs?: number;
+
+  /** The PID being profiled, or undefined if no profile is active. */
+  get profilePid(): number | undefined {
+    return this.activeProfile?.pid;
+  }
+
+  /** The process name being profiled. */
+  get profileProcessName(): string | undefined {
+    return this.activeProfile?.processName;
+  }
+
+  /** The x-axis timestamp (s relative to ts0) at which profiling started. */
+  get profileStartX(): number | undefined {
+    return this.activeProfile?.startX;
+  }
+
+  /** The state of the active profile. */
+  get profileState(): ProfileState | undefined {
+    return this.activeProfile?.state;
+  }
+
+  /** Whether a profile is currently active. */
+  get isProfiling(): boolean {
+    return this.activeProfile !== undefined;
+  }
+
+  /** Formatted duration of the active profile, e.g. "1m 22s". Empty when stopping. */
+  get profileDuration(): string {
+    if (this.profileStartMs === undefined) return '';
+    if (this.activeProfile?.state === 'stopping') return '';
+    const elapsed = Math.floor((Date.now() - this.profileStartMs) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    if (mins > 0) return `${mins}m ${secs}s`;
+    return `${secs}s`;
+  }
+
+  constructor(app: App, conn: ConnectionResult) {
+    this.app = app;
     this.device = conn.device;
     this.linuxTarget = conn.linuxTarget;
     this.deviceName = conn.deviceName;
@@ -158,6 +206,48 @@ export class LiveSession {
     } else {
       this.pause();
     }
+  }
+
+  /** Starts a heap profiling session for a single process. */
+  async startProfile(pid: number, processName: string): Promise<void> {
+    if (this.activeProfile) {
+      await this.activeProfile.cancel();
+    }
+    this.activeProfile = await createProcessProfileSession(
+      this.linuxTarget ?? this.device!,
+      pid,
+      processName,
+      this.data?.xMax ?? 0,
+    );
+    this.profileStartMs = Date.now();
+  }
+
+  /** Stops the active profile and opens the trace in the main UI. */
+  async stopAndOpenProfile(): Promise<void> {
+    const profile = this.activeProfile;
+    if (!profile) return;
+    const processName = profile.processName;
+    const pid = profile.pid;
+    await profile.stop();
+    const traceData = profile.getTraceData();
+    this.clearProfile();
+    if (traceData) {
+      const fileName = `heap-${processName}-${pid}.perfetto-trace`;
+      const buffer = traceData.buffer as ArrayBuffer;
+      this.app.openTraceFromBuffer({buffer, title: fileName, fileName});
+    }
+  }
+
+  /** Cancels the active profile and discards data. */
+  async cancelProfile(): Promise<void> {
+    if (!this.activeProfile) return;
+    await this.activeProfile.cancel();
+    this.clearProfile();
+  }
+
+  private clearProfile(): void {
+    this.activeProfile = undefined;
+    this.profileStartMs = undefined;
   }
 
   /** Stops the tracing session, polling, and disposes of the engine. */
