@@ -51,15 +51,36 @@
     --pf-color-warning: rgb(232, 158, 0);
     --pf-color-text-on-warning: var(--pf-color-text);
 
-    // Chart color palette for data visualization
-    --pf-chart-color-1: #4285f4; // Google Blue
-    --pf-chart-color-2: #ea4335; // Google Red
-    --pf-chart-color-3: #fbbc04; // Google Yellow
-    --pf-chart-color-4: #34a853; // Google Green
-    --pf-chart-color-5: #ff6d01; // Orange
-    --pf-chart-color-6: #46bdc6; // Cyan
-    --pf-chart-color-7: #9334e6; // Purple
-    --pf-chart-color-8: #185abc; // Dark Blue
+    // Chart color palette for data visualization. Designed to be a categorical
+    // palette: distinct, visually balanced hues that work over the light theme
+    // background. Use --pf-chart-color-neutral for "unknown"/"other" buckets.
+    --pf-chart-color-1: #1a73e8; // Blue
+    --pf-chart-color-2: #c5221f; // Red
+    --pf-chart-color-3: #c98a00; // Goldenrod
+    --pf-chart-color-4: #1e8e3e; // Green
+    --pf-chart-color-5: #d95800; // Orange
+    --pf-chart-color-6: #0e8a96; // Cyan
+    --pf-chart-color-7: #6a1b9a; // Purple
+    --pf-chart-color-8: #0d47a1; // Dark Blue
+    --pf-chart-color-9: #ad1457; // Pink
+    --pf-chart-color-10: #00695c; // Teal
+    --pf-chart-color-11: #4e342e; // Brown
+    --pf-chart-color-12: #4527a0; // Deep Purple
+    --pf-chart-color-13: #006978; // Light Cyan
+    --pf-chart-color-14: #558b2f; // Light Green
+    --pf-chart-color-15: #827717; // Lime
+    --pf-chart-color-16: #c25600; // Deep Orange
+    --pf-chart-color-17: #6a1b9a; // Magenta
+    --pf-chart-color-18: #283593; // Indigo
+    --pf-chart-color-19: #00585f; // Dark Cyan
+    --pf-chart-color-20: #2e7d32; // Mid Green
+    --pf-chart-color-21: #b71c1c; // Bright Red
+    --pf-chart-color-22: #1565c0; // Bright Blue
+    --pf-chart-color-23: #bf360c; // Burnt Orange
+    --pf-chart-color-24: #5e35b1; // Lavender
+    --pf-chart-color-neutral: #9e9e9e; // Gray (for unknown/other)
+    // Foreground color for text/icons drawn on top of any --pf-chart-color-*.
+    --pf-chart-color-on: #f5f5f5;
 
     --pf-color-track-summary-collapsed: #f4fafb;
     --pf-color-track-summary-expanded: #262f3b;
@@ -85,7 +106,7 @@
     --pf-color-text-muted: #a0a2a5;
     --pf-color-text-disabled: #8d8d8e;
     --pf-color-border: #484848;
-    --pf-color-border-secondary: #383838;
+    --pf-color-border-secondary: #3a3a3a;
     --pf-color-text-hint: #9aa0a6;
     --pf-color-box-shadow: rgba(0, 0, 0, 0.4);
     --pf-color-neutral: gray;
@@ -102,15 +123,34 @@
     --pf-color-warning: rgb(244, 188, 67);
     --pf-color-text-on-warning: #333;
 
-    // Chart color palette for data visualization (brighter for dark mode)
-    --pf-chart-color-1: #5e97f6; // Lighter Blue
-    --pf-chart-color-2: #f28b82; // Lighter Red
-    --pf-chart-color-3: #fdd663; // Lighter Yellow
-    --pf-chart-color-4: #81c995; // Lighter Green
-    --pf-chart-color-5: #ff8866; // Lighter Orange
-    --pf-chart-color-6: #78d9e4; // Lighter Cyan
-    --pf-chart-color-7: #c58af9; // Lighter Purple
-    --pf-chart-color-8: #669df6; // Lighter Dark Blue
+    // Chart color palette for data visualization (saturated for dark mode).
+    --pf-chart-color-1: #82b1ff; // Light Blue
+    --pf-chart-color-2: #ff8a80; // Light Red
+    --pf-chart-color-3: #ffe082; // Light Yellow
+    --pf-chart-color-4: #80e8a8; // Light Green
+    --pf-chart-color-5: #ffab7a; // Light Orange
+    --pf-chart-color-6: #84e6f1; // Light Cyan
+    --pf-chart-color-7: #d49bff; // Light Purple
+    --pf-chart-color-8: #8fb3ff; // Light Dark Blue
+    --pf-chart-color-9: #ff8ab0; // Light Pink
+    --pf-chart-color-10: #6eddc7; // Light Teal
+    --pf-chart-color-11: #e0b89e; // Light Brown
+    --pf-chart-color-12: #b9a3ff; // Light Deep Purple
+    --pf-chart-color-13: #84e8f8; // Light Light Cyan
+    --pf-chart-color-14: #c2e88e; // Light Light Green
+    --pf-chart-color-15: #e8ee7a; // Light Lime
+    --pf-chart-color-16: #ffbb80; // Light Soft Orange
+    --pf-chart-color-17: #e89aff; // Light Magenta
+    --pf-chart-color-18: #a3afff; // Light Indigo
+    --pf-chart-color-19: #7eddea; // Light Dark Cyan
+    --pf-chart-color-20: #88e0a0; // Light Mid Green
+    --pf-chart-color-21: #ff8a8a; // Light Bright Red
+    --pf-chart-color-22: #88c0ff; // Light Bright Blue
+    --pf-chart-color-23: #ffa088; // Light Burnt Orange
+    --pf-chart-color-24: #c4adff; // Light Lavender
+    --pf-chart-color-neutral: #9e9e9e; // Gray (for unknown/other)
+    // Foreground color for text/icons drawn on top of any --pf-chart-color-*.
+    --pf-chart-color-on: #1a1a1a;
 
     --pf-color-track-summary-collapsed: #2f3437;
     --pf-color-track-summary-expanded: #454d55;
