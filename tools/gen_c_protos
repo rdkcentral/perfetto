@@ -27,6 +27,13 @@ PERFETTO_DEFAULTS = {
     'guard_add_prefix': 'INCLUDE_PERFETTO_PUBLIC_PROTOS_',
     'path_strip_prefix': 'protos/perfetto',
     'path_add_prefix': 'perfetto/public/protos',
+    # External prefix pair, tried when the primary doesn't match. Used for
+    # protos under protos/third_party/ (e.g. the Android-tree mirror copies).
+    # See rfcs/0017-out-of-tree-protos.md.
+    'path_strip_prefix_external': 'protos',
+    'path_add_prefix_external': 'perfetto/public/protos',
+    'guard_strip_prefix_external': 'PROTOS_',
+    'guard_add_prefix_external': 'INCLUDE_PERFETTO_PUBLIC_PROTOS_',
     'include_prefix': 'include/',
 }
 
@@ -42,8 +49,8 @@ PROD_FILES = [
     'protos/perfetto/common/data_source_descriptor.proto',
     'protos/perfetto/common/semantic_type.proto',
     'protos/perfetto/config/data_source_config.proto',
-    'protos/perfetto/config/trace_config.proto',
     'protos/perfetto/config/protovm/protovm_config.proto',
+    'protos/perfetto/config/trace_config.proto',
     'protos/perfetto/config/track_event/track_event_config.proto',
     'protos/perfetto/trace/android/android_track_event.proto',
     'protos/perfetto/trace/clock_snapshot.proto',
@@ -55,6 +62,8 @@ PROD_FILES = [
     'protos/perfetto/trace/track_event/debug_annotation.proto',
     'protos/perfetto/trace/track_event/track_descriptor.proto',
     'protos/perfetto/trace/track_event/track_event.proto',
+    'protos/third_party/android/frameworks/base/proto/tracing/frameworks_base_track_event.proto',
+    'protos/third_party/android/frameworks/native/tracing/frameworks_native_track_event.proto',
 ]
 
 TEST_FILES = [
@@ -118,9 +127,18 @@ def transform_extension(filename):
   return filename
 
 
-def generate(source, outdir, protoc_path, protozero_c_plugin_path,
-             guard_strip_prefix, guard_add_prefix, path_strip_prefix,
-             path_add_prefix):
+def generate(source,
+             outdir,
+             protoc_path,
+             protozero_c_plugin_path,
+             guard_strip_prefix,
+             guard_add_prefix,
+             path_strip_prefix,
+             path_add_prefix,
+             path_strip_prefix_external='',
+             path_add_prefix_external='',
+             guard_strip_prefix_external='',
+             guard_add_prefix_external=''):
   options = {
       'guard_strip_prefix': guard_strip_prefix,
       'guard_add_prefix': guard_add_prefix,
@@ -128,6 +146,12 @@ def generate(source, outdir, protoc_path, protozero_c_plugin_path,
       'path_add_prefix': path_add_prefix,
       'invoker': SCRIPT_PATH,
   }
+  if path_strip_prefix_external:
+    options['path_strip_prefix_external'] = path_strip_prefix_external
+    options['path_add_prefix_external'] = path_add_prefix_external
+  if guard_strip_prefix_external:
+    options['guard_strip_prefix_external'] = guard_strip_prefix_external
+    options['guard_add_prefix_external'] = guard_add_prefix_external
   serialized_options = ','.join(
       ['{}={}'.format(name, value) for name, value in options.items()])
   subprocess.check_call([
@@ -216,16 +240,29 @@ OUTPUT:
               guard_add_prefix=sources['guard_add_prefix'],
               path_strip_prefix=sources['path_strip_prefix'],
               path_add_prefix=sources['path_add_prefix'],
+              path_strip_prefix_external=sources.get(
+                  'path_strip_prefix_external', ''),
+              path_add_prefix_external=sources.get('path_add_prefix_external',
+                                                   ''),
+              guard_strip_prefix_external=sources.get(
+                  'guard_strip_prefix_external', ''),
+              guard_add_prefix_external=sources.get('guard_add_prefix_external',
+                                                    ''),
           )
 
           tmpfilename = os.path.join(tmpdirname, transform_extension(source))
           clang_format(tmpfilename)
+          # Mirror the plugin's prefix mapping (primary, then external) so
+          # the on-disk placement matches the #includes the plugin emits.
           if source.startswith(sources['path_strip_prefix']):
-            targetfilename = source[len(sources['path_strip_prefix']):]
+            targetfilename = sources['path_add_prefix'] + source[
+                len(sources['path_strip_prefix']):]
+          elif sources.get('path_strip_prefix_external') and source.startswith(
+              sources['path_strip_prefix_external']):
+            targetfilename = sources['path_add_prefix_external'] + source[
+                len(sources['path_strip_prefix_external']):]
           else:
-            targetfilename = source
-
-          targetfilename = sources['path_add_prefix'] + targetfilename
+            targetfilename = sources['path_add_prefix'] + source
 
           if 'include_prefix' in sources:
             targetfilename = os.path.join(sources['include_prefix'],
