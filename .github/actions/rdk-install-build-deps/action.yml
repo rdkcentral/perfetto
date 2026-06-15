@@ -54,11 +54,12 @@ runs:
 
     - name: Restore buildtools from cache
       id: restore_buildtools_cache
-      uses: ./.github/actions/cache-on-google-cloud-storage/restore
+      uses: actions/cache/restore@v4
       with:
-        cache_key: ${{ steps.cache_key.outputs.key }}
-        directory: buildtools
-        exclude_files: ${{ steps.files_to_ignore.outputs.file_path }}
+        key: ${{ steps.cache_key.outputs.key }}-${{ steps.local_buildtools_hash.outputs.hash }}
+        restore-keys: |
+          ${{ steps.cache_key.outputs.key }}-
+        path: buildtools
 
     - name: Check if need to update buildtools cache
       id: check_if_need_update
@@ -92,12 +93,27 @@ runs:
       # correct deps if the restored cache is too old or too new.
       run: tools/install-build-deps ${{ inputs.install-flags }}
 
-    - name: Save buildtools cache (only on main)
+    - name: Remove git-tracked files from buildtools before caching
       if: |
-        github.ref == 'refs/heads/main' &&
+        github.ref == 'refs/heads/rdk/main' &&
         steps.check_if_need_update.outputs.update_cache == 'true'
-      uses: ./.github/actions/cache-on-google-cloud-storage/save
+      shell: bash
+      run: |
+        # Remove files that are tracked in git to avoid caching them
+        # These files will be restored from git, not from cache
+        cd buildtools
+        while IFS= read -r file; do
+          if [ -e "$file" ]; then
+            rm -rf "$file"
+          fi
+        done < "${{ steps.files_to_ignore.outputs.file_path }}"
+        cd ..
+
+    - name: Save buildtools cache (only on rdk/main)
+      if: |
+        github.ref == 'refs/heads/rdk/main' &&
+        steps.check_if_need_update.outputs.update_cache == 'true'
+      uses: actions/cache/save@v4
       with:
-        cache_key: ${{ steps.cache_key.outputs.key }}
-        directory: buildtools
-        exclude_files: ${{ steps.files_to_ignore.outputs.file_path }}
+        key: ${{ steps.cache_key.outputs.key }}-${{ steps.local_buildtools_hash.outputs.hash }}
+        path: buildtools
