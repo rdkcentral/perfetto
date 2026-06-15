@@ -17,11 +17,6 @@
 name: Deploy Perfetto UI to GitHub Pages
 
 on:
-  # TODO: remove
-  # Runs on pull requests targeting the default branch
-  pull_request:
-    branches: [ "rdk/main" ]
-
   # Runs on pushes targeting the default branch
   push:
     branches: ["rdk/main"]

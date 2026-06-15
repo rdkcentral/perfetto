@@ -120,6 +120,7 @@ runs:
 
     - name: Restore git-tracked files after cache save
       if: |
+        always() &&
         github.ref == 'refs/heads/rdk/main' &&
         steps.check_if_need_update.outputs.update_cache == 'true'
       shell: bash
