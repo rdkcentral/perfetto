@@ -117,3 +117,16 @@ runs:
       with:
         key: ${{ steps.cache_key.outputs.key }}-${{ steps.local_buildtools_hash.outputs.hash }}
         path: buildtools
+
+    - name: Restore git-tracked files after cache save
+      if: |
+        github.ref == 'refs/heads/rdk/main' &&
+        steps.check_if_need_update.outputs.update_cache == 'true'
+      shell: bash
+      run: |
+        # Restore git-tracked buildtools files so they're available for downstream build steps
+        # These files are critical for the build (e.g., libcxx_config/ for BUILD.gn)
+        # They were removed before cache save to keep cache clean, but must be present
+        # on the runner filesystem when the build runs
+        git checkout HEAD -- buildtools/
+
