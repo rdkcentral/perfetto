@@ -39,7 +39,7 @@ concurrency:
 jobs:
   # Build the UI and store it as an artifact for deployment
   build-ui:
-    uses: ./.github/workflows/build-ui.yml
+    uses: ./.github/workflows/rdk-build-ui.yml
 
   # Single deploy job since we're just deploying
   deploy-ui:

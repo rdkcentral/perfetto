@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v4
 
       # Install build dependencies with caching
-      - uses: ./.github/actions/install-build-deps
+      - uses: ./.github/actions/rdk-install-build-deps
         with:
           install-flags: --ui
 
