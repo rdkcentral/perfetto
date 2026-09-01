@@ -17,7 +17,7 @@ import type {TraceConfigBuilder} from '../config/trace_config_builder';
 import {Dropdown} from './widgets/dropdown';
 import {Textarea} from './widgets/textarea';
 
-const JOURNALD_DS = 'linux.systemd_journald';
+const JOURNALD_DS = 'rdk.journal';
 
 const MIN_PRIO_OPTIONS = [
   {value: 0, label: 'Emergency'},

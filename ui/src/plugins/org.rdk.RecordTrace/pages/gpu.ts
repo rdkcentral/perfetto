@@ -14,6 +14,7 @@
 
 import type {RecordProbe, RecordSubpage} from '../config/config_interfaces';
 import type {TraceConfigBuilder} from '../config/trace_config_builder';
+import {Slider, SliderAttrs} from './widgets/slider';
 
 export function gpuRecordSection(): RecordSubpage {
   return {
@@ -29,6 +30,8 @@ export function gpuRecordSection(): RecordSubpage {
       gpuRenderStages(),
       gpuMaliCounters(),
       gpuMaliFenceEvents(),
+      rdkGpuCounters(),
+      rdkGpuMemory(),
     ],
   };
 }
@@ -155,6 +158,51 @@ function gpuMaliFenceEvents(): RecordProbe {
           'mali/mali_KCPU_FENCE_WAIT_START',
         ],
       };
+    },
+  };
+}
+
+export const GPU_COUNTER_SAMPLE_INTERVAL_SLIDER: SliderAttrs = {
+  title: 'Sample interval',
+  min: 0.1,
+  default: 100,
+  values: [0.1, 0.5, 1, 2, 5, 10, 50, 100, 250, 500, 1000],
+  cssClass: '.thin',
+  unit: 'ms',
+};
+
+function rdkGpuCounters(): RecordProbe {
+  const settings = {
+    sampleIntervalMs: new Slider(GPU_COUNTER_SAMPLE_INTERVAL_SLIDER),
+  };
+  return {
+    id: 'rdk_gpu_counters',
+    title: 'GPU Counters',
+    description: 'Records GPU counters.',
+    supportedPlatforms: ['LINUX'],
+    settings,
+    genConfig: function (tc: TraceConfigBuilder) {
+      const cfg = tc.addDataSource('gpu.counters', 'default');
+      cfg.gpuCounterConfig = {
+        counterPeriodNs: settings.sampleIntervalMs.value * 1_000_000,
+        // All counters for now
+        counterNames: ['*'],
+      };
+    },
+  };
+}
+
+function rdkGpuMemory(): RecordProbe {
+  return {
+    id: 'rdk_gpu_memory',
+    image: 'rec_gpu_mem_total.png',
+    title: 'GPU memory',
+    description:
+      'Allows to track per process and global total GPU memory usages.',
+    supportedPlatforms: ['LINUX'],
+    genConfig: function (tc: TraceConfigBuilder) {
+      tc.addDataSource('gpu.memory');
+      tc.addFtraceEvents('gpu_mem/gpu_mem_total');
     },
   };
 }

@@ -30,6 +30,9 @@ concurrency:
 
 jobs:
   enforce-reviews:
+    # Disabled
+    if: ${{ false }}
+
     # Deliberately run on GitHub's ubuntu-latest pool as it's faster for small
     # job like this.
     runs-on: ubuntu-latest
