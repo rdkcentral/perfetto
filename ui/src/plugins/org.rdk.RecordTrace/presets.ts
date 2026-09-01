@@ -100,12 +100,6 @@ const LOGCAT_DEFAULT = [
   protos.AndroidLogId.LID_EVENTS,
 ];
 
-const JOURNAL_LOG_DEFAULT = [
-  protos.AndroidLogId.LID_DEFAULT,
-  protos.AndroidLogId.LID_SYSTEM,
-  protos.AndroidLogId.LID_KERNEL,
-];
-
 // Chrome-specific presets
 const CHROME_DEFAULT_PRESET: Preset = {
   id: 'default',
