@@ -14,7 +14,7 @@
 
 import type {RecordProbe, RecordSubpage} from '../config/config_interfaces';
 import type {TraceConfigBuilder} from '../config/trace_config_builder';
-import {Slider, SliderAttrs} from './widgets/slider';
+import {Slider, type SliderAttrs} from './widgets/slider';
 
 export function gpuRecordSection(): RecordSubpage {
   return {
