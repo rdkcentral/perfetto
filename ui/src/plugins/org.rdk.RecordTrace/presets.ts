@@ -100,12 +100,6 @@ const LOGCAT_DEFAULT = [
   protos.AndroidLogId.LID_EVENTS,
 ];
 
-const JOURNAL_LOG_DEFAULT = [
-  protos.AndroidLogId.LID_DEFAULT,
-  protos.AndroidLogId.LID_SYSTEM,
-  protos.AndroidLogId.LID_KERNEL,
-];
-
 // Chrome-specific presets
 const CHROME_DEFAULT_PRESET: Preset = {
   id: 'default',
@@ -322,7 +316,7 @@ export const LINUX_PRESETS: Preset[] = [
         cpu_freq: {settings: {pollMs: 1000}},
         process_stats: {settings: {pollMs: 1000}},
         sys_stats: {settings: {pollMs: 1000}},
-        journal: {settings: {buffers: JOURNAL_LOG_DEFAULT}},
+        systemd_journald: {settings: {}},
       },
     },
   },
@@ -343,7 +337,34 @@ export const LINUX_PRESETS: Preset[] = [
         cpu_sched: {settings: {}},
         cpu_freq: {settings: {pollMs: 100}},
         process_stats: {settings: {pollMs: 100}},
-        journal: {settings: {buffers: JOURNAL_LOG_DEFAULT}},
+        systemd_journald: {settings: {}},
+      },
+    },
+  },
+  {
+    id: 'graphics',
+    title: 'Graphics',
+    subtitle: 'GPU memory and counters',
+    icon: 'layers',
+    session: {
+      kind: 'probes',
+      mode: 'STOP_WHEN_FULL',
+      bufSizeKb: 64 * 1024,
+      durationMs: 10_000,
+      maxFileSizeMb: 500,
+      fileWritePeriodMs: 2500,
+      compression: false,
+      probes: {
+        cpu_usage: {settings: {pollMs: 1000}},
+        cpu_sched: {settings: {}},
+        cpu_freq: {settings: {pollMs: 1000}},
+        process_stats: {settings: {pollMs: 1000}},
+        sys_stats: {settings: {pollMs: 1000}},
+        systemd_journald: {settings: {}},
+        gpu_frequency: {settings: {}},
+        rdk_gpu_memory: {settings: {}},
+        rdk_gpu_counters: {settings: {}},
+        mem_proc_stat: {settings: {pollMs: 1000}},
       },
     },
   },

@@ -90,3 +90,12 @@ export class MsgChannelTargetRegistry {
     // Can be added if needed in the future.
   }
 }
+
+let sharedMsgChannelTargetRegistry: MsgChannelTargetRegistry | undefined;
+
+export function getSharedMsgChannelTargetRegistry(): MsgChannelTargetRegistry {
+  if (sharedMsgChannelTargetRegistry === undefined) {
+    sharedMsgChannelTargetRegistry = new MsgChannelTargetRegistry();
+  }
+  return sharedMsgChannelTargetRegistry;
+}
